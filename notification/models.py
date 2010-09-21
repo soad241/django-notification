@@ -23,12 +23,8 @@ from django.contrib.contenttypes import generic
 
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ugettext, get_language, activate
+from django.core.mail import EmailMultiAlternatives
 
-# favour django-mailer but fall back to django.core.mail
-if 'mailer' in settings.INSTALLED_APPS:
-    from mailer import send_mail
-else:
-    from django.core.mail import send_mail
 
 QUEUE_ALL = getattr(settings, "NOTIFICATION_QUEUE_ALL", False)
 
@@ -262,6 +258,7 @@ def send_now(users, label, extra_context=None, on_site=True):
         'full.txt',
         'notice.html',
         'full.html',
+        'email_full.html',
     ) # TODO make formats configurable
 
     for user in users:
@@ -298,11 +295,20 @@ def send_now(users, label, extra_context=None, on_site=True):
             'message': messages['full.txt'],
         }, context)
 
+
+        html = render_to_string('notification/email_body.html',{
+             'message': messages['email_full.html'],
+        }, context)
+
         notice = Notice.objects.create(user=user, message=messages['notice.html'],
             notice_type=notice_type, on_site=on_site)
         if should_send(user, notice_type, "1") and user.email: # Email
             recipients.append(user.email)
-        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, recipients)
+            msg = EmailMultiAlternatives(subject, body,
+                                         settings.DEFAULT_FROM_EMAIL,
+                                         recipients)
+            msg.attach_alternative(html, "text/html")
+            msg.send()
 
     # reset environment to original language
     activate(current_language)
