@@ -305,7 +305,8 @@ def send_now(users, label, extra_context=None, on_site=True):
         }, context)
 
         #notice = Notice.objects.create(user=user, message=messages['notice.html'], notice_type=notice_type, on_site=on_site)
-        if should_send(user, notice_type, "1") and user.email: # Email
+        if should_send(user, notice_type, "1") and user.email \
+                and user.is_active: # Email
             recipients.append(user.email)
             msg = EmailMultiAlternatives(subject, body,
                                          settings.DEFAULT_FROM_EMAIL,
