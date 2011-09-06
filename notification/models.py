@@ -87,6 +87,8 @@ def get_notification_setting(user, notice_type, medium):
         return setting
 
 def should_send(user, notice_type, medium):
+    if not user.is_active:
+        return False
     return get_notification_setting(user, notice_type, medium).send
 
 
